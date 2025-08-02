@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>资本做局模拟器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .siren-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: repeating-linear-gradient(90deg, #ffeb3b, #ffeb3b 20px, #e53935 20px, #e53935 40px);
+            animation: siren 1s linear infinite;
+            z-index: 100;
+        }
+        
+        @keyframes siren {
+            0% { background-position: 0 0; }
+            100% { background-position: 40px 0; }
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(13, 19, 33, 0.85);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 0 40px rgba(255, 235, 59, 0.3);
+            border: 3px solid #ffeb3b;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(5px);
+        }
+        
+        h1 {
+            font-size: 42px;
+            margin-bottom: 15px;
+            color: #ffeb3b;
+            text-shadow: 0 0 15px rgba(255, 235, 59, 0.6);
+        }
+        
+        .subtitle {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: #bbdefb;
+        }
+        
+        .gold-border {
+            border: 2px solid #ffd700;
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+            background: rgba(21, 27, 50, 0.7);
+        }
+        
+        #progress-container {
+            display: none;
+            margin: 30px 0;
+        }
+        
+        #progress-bar {
+            height: 30px;
+            background: #01579b;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        #progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4caf50, #ffeb3b, #ff9800, #f44336);
+            transition: width 0.5s;
+        }
+        
+        #progress-text {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 15px 0;
+            min-height: 60px;
+        }
+        
+        #status-text {
+            font-size: 20px;
+            color: #ffcc80;
+            font-style: italic;
+            min-height: 30px;
+            margin-top: 15px;
+        }
+        
+        #result {
+            display: none;
+            font-size: 28px;
+            padding: 25px;
+            background: rgba(229, 57, 53, 0.2);
+            border-radius: 15px;
+            border-left: 5px solid #f44336;
+            margin: 25px 0;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 18px 50px;
+            font-size: 24px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 20px rgba(245, 124, 0, 0.4);
+            margin: 15px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(245, 124, 0, 0.6);
+        }
+        
+        .btn:active {
+            transform: translateY(2px);
+        }
+        
+        .btn-share {
+            background: linear-gradient(45deg, #4caf50, #2e7d32);
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+        
+        .stat-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            min-width: 150px;
+            margin: 10px;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffeb3b;
+        }
+        
+        .stat-label {
+            font-size: 16px;
+            color: #bbdefb;
+        }
+        
+        .money-fall {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .money-note {
+            position: absolute;
+            font-size: 30px;
+            top: -50px;
+            animation: fall linear forwards;
+            color: #4caf50;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+        }
+        
+        @keyframes fall {
+            to {
+                transform: translateY(100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        .footer {
+            margin-top: 30px;
+            font-size: 16px;
+            color: #90a4ae;
+        }
+        
+        .disclaimer {
+            background: rgba(229, 57, 53, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .joker-face {
+            font-size: 100px;
+            margin: 20px 0;
+            animation: joker 3s infinite;
+        }
+        
+        @keyframes joker {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-10deg); }
+            100% { transform: rotate(0deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="siren-bar"></div>
+    <div class="money-fall" id="moneyFall"></div>
+    
+    <div class="container">
+        <h1>资本做局模拟器</h1>
+        <p class="subtitle">体验被资本收割的奇妙旅程</p>
+        
+        <div class="gold-border">
+            <div id="intro">
+                <p style="font-size: 20px; margin-bottom: 25px;">
+                    <i class="fas fa-exclamation-triangle"></i> 警告：本模拟器可能引起韭菜不适
+                </p>
+                <button class="btn" id="startBtn">
+                    <i class="fas fa-play"></i> 开始资本布局
+                </button>
+            </div>
+            
+            <div id="progress-container">
+                <div id="progress-bar">
+                    <div id="progress-fill"></div>
+                </div>
+                <div id="progress-text">准备资本注入...</div>
+                <div id="status-text"></div>
+            </div>
+            
+            <div id="result"></div>
+            
+            <div id="actions" style="display: none;">
+                <button class="btn" id="againBtn">
+                    <i class="fas fa-redo"></i> 再做一局
+                </button>
+                <button class="btn btn-share" id="shareBtn">
+                    <i class="fas fa-share-alt"></i> 分享给韭菜
+                </button>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-value" id="timeWasted">0</div>
+                <div class="stat-label">被浪费的生命</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="victims">0</div>
+                <div class="stat-label">被收割的韭菜</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value" id="profit">0</div>
+                <div class="stat-label">虚拟利润(¥亿)</div>
+            </div>
+        </div>
+        
+        <div class="disclaimer">
+            <i class="fas fa-info-circle"></i> 本工具纯属娱乐，如有雷同，说明你已被资本收割
+        </div>
+        
+        <div class="footer">
+            © 2025 资本做局模拟器 | 让割韭菜变得艺术
+        </div>
+    </div>
+
+    <script>
+        // 资本运作状态池
+        const statusMessages = [
+            "正在连接资本市场...",
+            "分配韭菜收割指标...",
+            "制造增长幻觉...",
+            "包装商业模式...",
+            "编造用户数据...",
+            "操纵K线图...",
+            "雇佣水军造势...",
+            "联系接盘机构...",
+            "准备上市圈钱...",
+            "转移海外资产...",
+            "销毁做局证据...",
+            "聘请顶级律师...",
+            "注册离岸公司...",
+            "购买监管漏洞..."
+        ];
+        
+        // 结果消息池
+        const resultMessages = [
+            "恭喜！您已成功收割{韭菜数量}万根韭菜，获利¥{金额}亿！",
+            "做局完成！{金额}亿已转移至开曼群岛账户",
+            "韭菜们感谢您的辛勤收割！您的资本等级提升！",
+            "您的做局手法已收录《资本割韭宝典》第{页码}版",
+            "监管部门送来锦旗：『最佳收割奖』"
+        ];
+        
+        // 初始化
+        let timeWasted = 0;
+        let victims = 0;
+        let profit = 0;
+        let progressInterval;
+        
+        // DOM元素
+        const startBtn = document.getElementById('startBtn');
+        const intro = document.getElementById('intro');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        const statusText = document.getElementById('status-text');
+        const resultDiv = document.getElementById('result');
+        const actionsDiv = document.getElementById('actions');
+        const timeWastedSpan = document.getElementById('timeWasted');
+        const victimsSpan = document.getElementById('victims');
+        const profitSpan = document.getElementById('profit');
+        const moneyFall = document.getElementById('moneyFall');
+        
+        // 开始资本布局
+        startBtn.addEventListener('click', startCapitalOperation);
+        
+        function startCapitalOperation() {
+            // 更新统计数据
+            victims += Math.floor(Math.random() * 10000) + 1000;
+            profit += Math.floor(Math.random() * 100) + 50;
+            
+            // 更新UI
+            intro.style.display = 'none';
+            progressContainer.style.display = 'block';
+            actionsDiv.style.display = 'none';
+            resultDiv.style.display = 'none';
+            
+            // 重置进度
+            let progress = 0;
+            progressFill.style.width = '0%';
+            progressText.textContent = '资本引擎启动中...';
+            
+            // 开始进度
+            clearInterval(progressInterval);
+            progressInterval = setInterval(() => {
+                progress += Math.random() * 5;
+                if (progress > 100) progress = 100;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = '做局进度: ' + Math.round(progress) + '%';
+                
+                // 随机显示状态消息
+                if (Math.random() > 0.7) {
+                    const randomMsg = statusMessages[Math.floor(Math.random() * statusMessages.length)];
+                    statusText.textContent = randomMsg;
+                }
+                
+                // 完成进度
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                    showResult();
+                }
+            }, 300);
+        }
+        
+        function showResult() {
+            // 更新全局统计
+            timeWasted += 15;
+            
+            // 生成结果消息
+            const randomResult = resultMessages[Math.floor(Math.random() * resultMessages.length)]
+                .replace('{韭菜数量}', (victims/10000).toFixed(1))
+                .replace('{金额}', profit)
+                .replace('{页码}', Math.floor(Math.random() * 1000) + 1);
+            
+            // 显示结果
+            progressContainer.style.display = 'none';
+            resultDiv.innerHTML = `
+                <div class="joker-face">🃏</div>
+                <div>${randomResult}</div>
+                <div style="font-size: 24px; margin-top: 20px; color: #ffcc80;">
+                    <i class="fas fa-clock"></i> 您又浪费了15秒生命！
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+            actionsDiv.style.display = 'block';
+            
+            // 更新统计UI
+            timeWastedSpan.textContent = timeWasted;
+            victimsSpan.textContent = (victims/10000).toFixed(1) + '万';
+            profitSpan.textContent = profit;
+            
+            // 钞票雨效果
+            createMoneyRain();
+        }
+        
+        function createMoneyRain() {
+            // 清除现有钞票
+            moneyFall.innerHTML = '';
+            
+            // 创建新钞票
+            for (let i = 0; i < 50; i++) {
+                const money = document.createElement('div');
+                money.className = 'money-note';
+                money.innerHTML = '¥';
+                money.style.left = Math.random() * 100 + '%';
+                money.style.animationDuration = (Math.random() * 5 + 3) + 's';
+                money.style.opacity = Math.random() * 0.8 + 0.2;
+                money.style.fontSize = (Math.random() * 20 + 20) + 'px';
+                moneyFall.appendChild(money);
+                
+                // 动画结束后移除
+                setTimeout(() => {
+                    money.remove();
+                }, 8000);
+            }
+        }
+        
+        // 分享功能
+        document.getElementById('shareBtn').addEventListener('click', function() {
+            victims += 10000;
+            victimsSpan.textContent = (victims/10000).toFixed(1) + '万';
+            alert('分享成功！又有1万根韭菜加入了收割名单！');
+        });
+        
+        // 再来一次
+        document.getElementById('againBtn').addEventListener('click', startCapitalOperation);
+        
+        // 初始化统计
+        timeWastedSpan.textContent = timeWasted;
+        victimsSpan.textContent = (victims/10000).toFixed(1) + '万';
+        profitSpan.textContent = profit;
+    </script>
+</body>
+</html>
